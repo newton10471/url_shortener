@@ -75,7 +75,7 @@ get '/list' do
   # Find a few rows
   output = ""
   rows = db.execute( "select * from url_shorten" ) do |row|
-    outputline = "<a href=http://l#{url_host}:#{url_port}/#{row[0]}>#{row[0]}</a> #{row[1]}<br>"
+    outputline = "<a href=http://#{url_host}:#{url_port}/#{row[0]}>#{row[0]}</a> #{row[1]}<br>"
     output << outputline
   end
   return output
