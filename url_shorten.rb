@@ -1,12 +1,21 @@
 require 'sinatra'
 require 'sqlite3'
 
-def makeurl(url, redirect_url)
+def increment_hit(db, url)
+  # get existing # hits for this URL
+
+  # increment it
+  # write new value to db
+  return 0
+end 
+
+def makeurl(db, url, redirect_url)
   posturl = "/" + url
 
   puts "URL: #{posturl}, redirect: #{redirect_url}"
 
   get posturl do
+    increment_hit(db, url)
     redirect redirect_url
   end
 end
@@ -24,9 +33,13 @@ end
 
 def reload_urls(db)
   db.execute( "select * from url_shorten" ) do |row|
-    makeurl(row[0], row[1])
+    makeurl(db, row[0], row[1])
   end
 end
+
+# host and port of URL shortening server
+url_host = "localhost"
+url_port = 4567
 
 # Open a database
 db = SQLite3::Database.new( "url_shorten.db" )
@@ -34,6 +47,7 @@ db = SQLite3::Database.new( "url_shorten.db" )
 reload_urls(db)
 
 get '/new' do
+  # haml :new, :format => :html5
   "<html>
     <body>
       <form action='/new' method='POST'>
@@ -46,12 +60,12 @@ end
 
 post '/new' do
   new_url = []
-  base_url = ["http://localhost:4567/"]
+  base_url = ["http://#{url_host}:#{url_port}/"]
   6.times do 
     new_url << ('A'..'Z').to_a.sample
   end
   
-  makeurl(new_url.join, params["url"])
+  makeurl(db, new_url.join, params["url"])
   write_url_to_db(db, new_url.join, params["url"])
 
   "Your new URL is <a href=#{new_url.join}>#{new_url.join}</a> which redirects to #{params["url"]}"
@@ -61,7 +75,7 @@ get '/list' do
   # Find a few rows
   output = ""
   rows = db.execute( "select * from url_shorten" ) do |row|
-    outputline = "<a href=http://localhost:4567/#{row[0]}>#{row[0]}</a> #{row[1]}<br>"
+    outputline = "<a href=http://l#{url_host}:#{url_port}/#{row[0]}>#{row[0]}</a> #{row[1]}<br>"
     output << outputline
   end
   return output
