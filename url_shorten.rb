@@ -4,10 +4,11 @@ require 'haml'
 
 def increment_hit(db, url)
   # get existing # hits for this URL
-
+  existing_hits = db.execute("select hits from url_shorten where url = \"#{url}\" ")
   # increment it
+  new_hits = existing_hits[0][0].to_i + 1
   # write new value to db
-  return 0
+  db.execute("update url_shorten set hits = (\"#{new_hits}\") where url = \"#{url}\" ")
 end 
 
 def makeurl(db, url, redirect_url)
@@ -22,12 +23,7 @@ def makeurl(db, url, redirect_url)
 end
 
 def write_url_to_db(db,url,redirect_url)
-  # Execute a few inserts
-  {
-    url => redirect_url,
-  }.each do |pair|
-    db.execute "insert into url_shorten values ( ?, ? )", pair
-  end
+    db.execute( "insert into url_shorten (url, redirect_url, hits) values (\"#{url}\", \"#{redirect_url}\", 0)" )
 end
 
 def reload_urls(db)
@@ -66,7 +62,7 @@ get '/list' do
   # Find a few rows
   output = ""
   rows = db.execute( "select * from url_shorten" ) do |row|
-    outputline = "<a href=http://#{url_host}:#{url_port}/#{row[0]}>#{row[0]}</a> #{row[1]}<br>"
+    outputline = "<a href=http://#{url_host}:#{url_port}/#{row[0]}>#{row[0]}</a> #{row[1]} #{row[2]}<br>"
     output << outputline
   end
   return output
