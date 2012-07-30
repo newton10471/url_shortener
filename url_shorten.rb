@@ -1,5 +1,6 @@
 require 'sinatra'
 require 'sqlite3'
+require 'haml'
 
 def increment_hit(db, url)
   # get existing # hits for this URL
@@ -23,8 +24,6 @@ end
 def write_url_to_db(db,url,redirect_url)
   # Execute a few inserts
   {
-    # "url" => url,
-    # "redirect_url" => redirect_url,
     url => redirect_url,
   }.each do |pair|
     db.execute "insert into url_shorten values ( ?, ? )", pair
@@ -47,15 +46,7 @@ db = SQLite3::Database.new( "url_shorten.db" )
 reload_urls(db)
 
 get '/new' do
-  # haml :new, :format => :html5
-  "<html>
-    <body>
-      <form action='/new' method='POST'>
-        <input type='url' name='url' placeholder='Enter URL here'>
-        <input type='submit' value='GO'>
-      </form>
-    </body>
-  </html>"
+  haml :new, :format => :html5
 end
 
 post '/new' do
