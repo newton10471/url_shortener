@@ -29,6 +29,10 @@ class ShortenedURL
     @destination_url
   end
 
+  def hits
+    @hits
+  end
+
   def shortened_url=(short_url)
     @shortened_url = short_url
   end
@@ -47,6 +51,23 @@ class ShortenedURL
     found_url.shortened_url = short_url
     found_url.hits = result['hits']
     return found_url
+  end
+
+  def self.list_all
+    db = SQLite3::Database.new( "urls.db" )
+    db.results_as_hash = true
+
+    array_of_url_objects = []
+
+    rows = db.execute( "select * from urls" ) do |row|
+      # row = row[0]
+      p "url_object row: #{row}"
+      url_object = ShortenedURL.new(row['destination_url'])
+      url_object.shortened_url = row['short_url']
+      url_object.hits = row['hits']
+      array_of_url_objects << url_object
+    end
+    return array_of_url_objects
   end
 
   private 
@@ -83,11 +104,13 @@ get '/short_url_route/:short_url' do |url|
 end
 
 get '/list' do
-  db = SQLite3::Database.new( "urls.db" )
-  # Find a few rows
+  # db = SQLite3::Database.new( "urls.db" )
+  array_of_url_objects = ShortenedURL.list_all
+
   output = ""
-  rows = db.execute( "select * from urls" ) do |row|
-    outputline = "<a href=http://#{url_host}:#{url_port}/short_url_route/#{row[0]}>#{row[0]}</a> #{row[1]} #{row[2]}<br>"
+  # rows = db.execute( "select * from urls" ) do |row|
+  array_of_url_objects.each do |url_object|
+    outputline = "<a href=http://#{url_host}:#{url_port}/short_url_route/#{url_object.shortened}>#{url_object.shortened}</a> #{url_object.destination} #{url_object.hits}<br>"
     output << outputline
   end
   return output
