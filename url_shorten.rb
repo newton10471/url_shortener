@@ -20,9 +20,7 @@ class ShortenedURL
     db.results_as_hash = true
     existing_hits = db.execute("select * from urls where shortened_url = ?", short_url)
     existing_hits = existing_hits[0]
-    p "existing_hits: #{existing_hits}"
     new_hits = existing_hits['hits'].to_i + 1
-    p "new_hits: #{new_hits}"
     db.execute("update urls set hits = ? where shortened_url = ?", new_hits, short_url)
   end
 
@@ -50,7 +48,6 @@ class ShortenedURL
     db = SQLite3::Database.new( "urls.db" )
     db.results_as_hash = true
     result = db.execute("select * from urls where shortened_url = ?", short_url)
-    p "result: #{result.empty?}"
 
     if result.empty?
       return nil
@@ -105,12 +102,12 @@ post '/new' do
   new_url = ShortenedURL.new(params[:url])
   new_url.save
 
-  "Your new URL is <a href=http://#{url_host}:#{url_port}/short_url_route/#{new_url.shortened}>#{new_url.shortened}</a> which redirects to #{new_url.destination}"
+  "Your new URL is <a href=http://#{url_host}:#{url_port}/#{short_url_route}/#{new_url.shortened}>#{new_url.shortened}</a> which redirects to #{new_url.destination}"
 end
 
-get '/short_url_route/:short_url' do |url|
+get '/shorturl/:short_url' do |url|
   shortened_url = ShortenedURL.find_by_shortened_url(url)
-  # p "destination_url: #{destination_url}"
+
   if shortened_url.nil?
     return "You tried a shortened URL that doesn't exist!"
   else
@@ -124,7 +121,7 @@ get '/list' do
 
   output = ""
   array_of_url_objects.each do |url_object|
-    outputline = "<a href=http://#{url_host}:#{url_port}/short_url_route/#{url_object.shortened}>#{url_object.shortened}</a> #{url_object.destination} #{url_object.hits}<br>"
+    outputline = "<a href=http://#{url_host}:#{url_port}/#{short_url_route}/#{url_object.shortened}>#{url_object.shortened}</a> #{url_object.destination} #{url_object.hits}<br>"
     output << outputline
   end
   return output
