@@ -50,12 +50,18 @@ class ShortenedURL
     db = SQLite3::Database.new( "urls.db" )
     db.results_as_hash = true
     result = db.execute("select * from urls where shortened_url = ?", short_url)
-    result = result[0]  # result comes back as an array of a hash and an array; this makes things easily accessible as hash
+    p "result: #{result.empty?}"
 
-    found_url = ShortenedURL.new(result['destination_url'])
-    found_url.shortened_url = short_url
-    found_url.hits = result['hits']
-    return found_url
+    if result.empty?
+      return nil
+    else
+      result = result[0]  # result comes back as an array of a hash and an array; this makes things easily accessible as hash
+
+      found_url = ShortenedURL.new(result['destination_url'])
+      found_url.shortened_url = short_url
+      found_url.hits = result['hits']
+      return found_url
+    end
   end
 
   def self.list_all
@@ -103,8 +109,14 @@ post '/new' do
 end
 
 get '/short_url_route/:short_url' do |url|
-  ShortenedURL.increment(url)
-  redirect ShortenedURL.find_by_shortened_url(url).destination
+  shortened_url = ShortenedURL.find_by_shortened_url(url)
+  # p "destination_url: #{destination_url}"
+  if shortened_url.nil?
+    return "You tried a shortened URL that doesn't exist!"
+  else
+    ShortenedURL.increment(url)
+    redirect shortened_url.destination
+  end
 end
 
 get '/list' do
