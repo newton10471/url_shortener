@@ -15,10 +15,15 @@ class ShortenedURL
     @db.execute("insert into urls values (?, ?, ?)", @shortened_url, @destination_url, @hits)
   end
 
-  def increment
-    existing_hits = @db.execute("select hits from urls where shortened_url = ?", @shortened_url)
+  def self.increment(short_url)
+    db = SQLite3::Database.new( "urls.db" )
+    db.results_as_hash = true
+    existing_hits = db.execute("select * from urls where shortened_url = ?", short_url)
+    existing_hits = existing_hits[0]
+    p "existing_hits: #{existing_hits}"
     new_hits = existing_hits['hits'].to_i + 1
-    @db.execute("update urls set hits = ? where shortened_url = ?", new_hits, @shortened_url)
+    p "new_hits: #{new_hits}"
+    db.execute("update urls set hits = ? where shortened_url = ?", new_hits, short_url)
   end
 
   def shortened
@@ -60,10 +65,8 @@ class ShortenedURL
     array_of_url_objects = []
 
     rows = db.execute( "select * from urls" ) do |row|
-      # row = row[0]
-      p "url_object row: #{row}"
       url_object = ShortenedURL.new(row['destination_url'])
-      url_object.shortened_url = row['short_url']
+      url_object.shortened_url = row['shortened_url']
       url_object.hits = row['hits']
       array_of_url_objects << url_object
     end
@@ -100,15 +103,14 @@ post '/new' do
 end
 
 get '/short_url_route/:short_url' do |url|
+  ShortenedURL.increment(url)
   redirect ShortenedURL.find_by_shortened_url(url).destination
 end
 
 get '/list' do
-  # db = SQLite3::Database.new( "urls.db" )
   array_of_url_objects = ShortenedURL.list_all
 
   output = ""
-  # rows = db.execute( "select * from urls" ) do |row|
   array_of_url_objects.each do |url_object|
     outputline = "<a href=http://#{url_host}:#{url_port}/short_url_route/#{url_object.shortened}>#{url_object.shortened}</a> #{url_object.destination} #{url_object.hits}<br>"
     output << outputline
